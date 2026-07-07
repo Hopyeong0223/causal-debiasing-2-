@@ -171,7 +171,7 @@ st.markdown("""
         background-color: #FFFFFF; border-radius: 12px;
         padding: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
-    .stTabs [data-baseweb="tab"] { color: #1A1A2E !important; font-weight: 600; border-radius: 8px; }
+    .stTabs [data-baseweb="tab"] { color: #1A1A2E !important; font-weight: 600; border-radius: 8px; background-color: #E8E8E8 !important; }
     .stTabs [aria-selected="true"] { background-color: #4A90D9; color: white !important; }
     div[data-testid="metric-container"] {
         background-color: #FFFFFF; border-radius: 12px;
