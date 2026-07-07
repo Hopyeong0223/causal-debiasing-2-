@@ -252,6 +252,9 @@ data/
 | Bias Dashboard | Lorenz curve, Gini, α sweep 시각화 |
 | DML Analysis | Naive vs DML θ 비교, confounding 시각화 |
 
+## Live Demo
+[Streamlit App](https://h8c63pzauiyhamesmzdqdu.streamlit.app/)
+
 ---
 
 ## References
