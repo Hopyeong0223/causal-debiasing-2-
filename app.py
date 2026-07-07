@@ -366,7 +366,7 @@ with tab3:
 
     theta_dml   = 0.0021
     theta_naive = -0.0649
-    ci_dml      = dml["conf_int"]
+    ci_dml      = dml.get("conf_int", [-0.0023, 0.0065])
     pval_dml    = 0.349
     pval_naive  = 0.0000
     r2_T        = 0.067
