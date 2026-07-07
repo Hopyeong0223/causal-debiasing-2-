@@ -11,7 +11,6 @@ import implicit
 import gdown
 import os
 
-# ── BPRMF class ──────────────────────────────
 class BPRMF(nn.Module):
     def __init__(self, n_users, n_items, embed_dim):
         super().__init__()
@@ -36,7 +35,6 @@ class BPRMF(nn.Module):
         topk = torch.topk(scores, N)
         return topk.indices.numpy(), topk.values.numpy()
 
-# ── CPU Unpickler ────────────────────────────
 class CPUUnpickler(pickle.Unpickler):
     def find_class(self, module, name):
         if name == 'BPRMF':
@@ -47,7 +45,6 @@ class CPUUnpickler(pickle.Unpickler):
                                         weights_only=False)
         return super().find_class(module, name)
 
-# ── Google Drive File IDs ────────────────────
 FILE_IDS = {
     "model_data.pkl":          "15QgJ-JLQyZUODo1yHS98h_tvDaqwdFcp",
     "dml_results.pkl":         "1TbOzVb3zmOEEgD_4NWiBKnhvDbhp162J",
@@ -58,7 +55,6 @@ FILE_IDS = {
     "item_categories.csv":     "1TcUCbKjMf_tkfpxU5OdDCxltQczoOMLW",
 }
 
-# ── Download from Google Drive ───────────────
 def download_file(filename):
     os.makedirs("data", exist_ok=True)
     path = f"data/{filename}"
@@ -68,16 +64,14 @@ def download_file(filename):
         gdown.download(url, path, quiet=False)
     return path
 
-# ── Load all data ────────────────────────────
 @st.cache_resource
 def load_all():
-    with st.spinner("Downloading model data from Google Drive..."):
+    with st.spinner("Downloading data from Google Drive..."):
         for fname in FILE_IDS:
             download_file(fname)
 
     with open("data/model_data.pkl", "rb") as f:
         md = CPUUnpickler(f).load()
-
     with open("data/dml_results.pkl", "rb") as f:
         dml = pickle.load(f)
 
@@ -114,7 +108,6 @@ def load_all():
 
 md, dml, step3, item_info, big = load_all()
 
-# ── Variables ────────────────────────────────
 model      = md["model_baseline"]
 prop       = md["propensity_big"]
 exp_raw    = md["exposure_raw"]
@@ -132,7 +125,6 @@ train_ui  = sparse.csr_matrix(
     shape=(len(user_cat.categories), len(item_cat.categories))
 )
 
-# ── Recommendation function ──────────────────
 def get_recommendations(user_idx, lam, N=10, pool=50):
     rec_ids, rec_scores = model.recommend(
         user_idx, train_ui[user_idx],
@@ -157,38 +149,26 @@ def get_item_info(item_id):
     return (tag if pd.notna(tag) else "No tag",
             int(like) if pd.notna(like) else 0)
 
-# ── Page config ──────────────────────────────
-st.set_page_config(
-    page_title="Causal Debiasing for RecSys",
-    layout="wide"
-)
+st.set_page_config(page_title="Causal Debiasing for RecSys", layout="wide")
 
 st.title("Causal Debiasing for Recommender Systems")
 st.markdown("Diagnosing and correcting popularity bias in recommendation logs using causal inference.")
 
-tab1, tab2, tab3 = st.tabs([
-    "IPS Debiasing Demo",
-    "Bias Dashboard",
-    "DML Analysis"
-])
+tab1, tab2, tab3 = st.tabs(["IPS Debiasing Demo", "Bias Dashboard", "DML Analysis"])
 
-# ══════════════════════════════════════════════
-# Tab 1 — IPS Debiasing Demo
-# ══════════════════════════════════════════════
 with tab1:
     st.markdown("Compare Baseline vs IPS Re-ranking recommendations.")
-
     col_side, col_main = st.columns([1, 3])
 
     with col_side:
         st.subheader("Settings")
-        user_list     = list(id2code.keys())
+        user_list = list(id2code.keys())
         selected_user = st.number_input(
-          "Enter User ID",
-          min_value=int(min(user_list)),
-          max_value=int(max(user_list)),
-          value=int(user_list[0]),
-          step=1
+            "Enter User ID",
+            min_value=int(min(user_list)),
+            max_value=int(max(user_list)),
+            value=int(user_list[0]),
+            step=1
         )
         selected_user = int(selected_user)
         lam = st.slider("lambda (IPS strength)", 0.0, 1.0, 0.0, 0.1)
@@ -199,7 +179,7 @@ with tab1:
 - 1.0 → Maximum IPS debiasing
 """)
 
-    user_idx = id2code[selected_user]
+    user_idx = id2code.get(selected_user, list(id2code.values())[0])
 
     with col_main:
         col1, col2 = st.columns(2)
@@ -228,7 +208,6 @@ with tab1:
 
         st.divider()
         st.subheader("Popularity Comparison")
-
         pop_base = [exp_raw.get(r[0], 0) for r in recs_base]
         pop_ips  = [exp_raw.get(r[0], 0) for r in recs_ips]
 
@@ -237,12 +216,10 @@ with tab1:
         axes[0].set_title("Baseline Top-10 Popularity")
         axes[0].set_xlabel("Rank")
         axes[0].set_ylabel("Interaction Count")
-
         axes[1].bar(range(1, 11), pop_ips, color="coral", alpha=0.8)
         axes[1].set_title(f"IPS (lambda={lam}) Top-10 Popularity")
         axes[1].set_xlabel("Rank")
         axes[1].set_ylabel("Interaction Count")
-
         plt.tight_layout()
         st.pyplot(fig)
 
@@ -251,21 +228,17 @@ with tab1:
         avg_base = np.mean(pop_base) if pop_base else 0
         avg_ips  = np.mean(pop_ips)  if pop_ips  else 0
         c1.metric("Baseline Avg Popularity", f"{avg_base:.1f}")
-        c2.metric("IPS Avg Popularity",      f"{avg_ips:.1f}")
+        c2.metric("IPS Avg Popularity", f"{avg_ips:.1f}")
         if avg_base > 0:
             c3.metric("Popularity Reduction",
                       f"{avg_base - avg_ips:.1f}",
                       delta=f"-{(avg_base-avg_ips)/avg_base*100:.1f}%")
 
-# ══════════════════════════════════════════════
-# Tab 2 — Bias Dashboard
-# ══════════════════════════════════════════════
 with tab2:
     st.markdown("Visualizing popularity bias in KuaiRec big_matrix.")
 
     item_pop = big.groupby("video_id").size().sort_values(ascending=False)
-    g_val    = item_pop.values.astype(float)
-    g_sorted = np.sort(g_val)
+    g_sorted = np.sort(item_pop.values.astype(float))
     n        = len(g_sorted)
     cum      = np.cumsum(g_sorted) / g_sorted.sum()
     x        = np.arange(1, n+1) / n
@@ -273,18 +246,14 @@ with tab2:
                       (n+1)*g_sorted.sum()) / (n*g_sorted.sum()))
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Gini Coefficient", f"{gini:.4f}",
-                help="0=perfect equality, 1=perfect inequality")
+    col1.metric("Gini Coefficient", f"{gini:.4f}")
     top10 = item_pop.head(int(n*0.1)).sum() / item_pop.sum()
     col2.metric("Top 10% Items Exposure Share", f"{top10*100:.1f}%")
     col3.metric("Total Items", f"{n:,}")
 
     st.divider()
-
     fig2, axes2 = plt.subplots(1, 2, figsize=(14, 5))
-
-    axes2[0].plot(x, cum, color="crimson", lw=2,
-                  label=f"Lorenz (Gini={gini:.3f})")
+    axes2[0].plot(x, cum, color="crimson", lw=2, label=f"Lorenz (Gini={gini:.3f})")
     axes2[0].plot([0,1],[0,1], "k--", alpha=0.5, label="Perfect equality")
     axes2[0].fill_between(x, x, cum, alpha=0.15, color="crimson")
     axes2[0].set_xlabel("Cumulative share of items")
@@ -293,57 +262,44 @@ with tab2:
     axes2[0].legend()
     axes2[0].grid(True, alpha=0.3)
 
-    axes2[1].plot(np.arange(1, n+1), item_pop.values,
-                  color="steelblue", lw=1.2)
+    axes2[1].plot(np.arange(1, n+1), item_pop.values, color="steelblue", lw=1.2)
     axes2[1].set_xscale("log")
     axes2[1].set_yscale("log")
     axes2[1].set_xlabel("Item rank (log)")
     axes2[1].set_ylabel("Exposure count (log)")
     axes2[1].set_title("Long-tail Distribution")
     axes2[1].grid(True, alpha=0.3)
-
     plt.tight_layout()
     st.pyplot(fig2)
 
     st.divider()
     st.subheader("Alpha Sweep — Accuracy vs Diversity Trade-off")
-
     fig3, axes3 = plt.subplots(1, 3, figsize=(16, 5))
-
-    axes3[0].plot(step3["alpha"], step3["recall@20"],
-                  "o-", color="steelblue", lw=2, ms=8, label="Recall@20")
-    axes3[0].plot(step3["alpha"], step3["recall@50"],
-                  "o-", color="green", lw=2, ms=8, label="Recall@50")
-    axes3[0].set_xlabel("alpha (IPS strength)")
+    axes3[0].plot(step3["alpha"], step3["recall@20"], "o-", color="steelblue", lw=2, ms=8, label="Recall@20")
+    axes3[0].plot(step3["alpha"], step3["recall@50"], "o-", color="green", lw=2, ms=8, label="Recall@50")
+    axes3[0].set_xlabel("alpha")
     axes3[0].set_ylabel("Recall")
     axes3[0].set_title("Accuracy vs alpha")
     axes3[0].legend()
     axes3[0].grid(True, alpha=0.3)
 
-    axes3[1].plot(step3["alpha"], step3["coverage@20"],
-                  "o-", color="orange", lw=2, ms=8)
-    axes3[1].set_xlabel("alpha (IPS strength)")
+    axes3[1].plot(step3["alpha"], step3["coverage@20"], "o-", color="orange", lw=2, ms=8)
+    axes3[1].set_xlabel("alpha")
     axes3[1].set_ylabel("Coverage@20")
     axes3[1].set_title("Coverage vs alpha")
     axes3[1].grid(True, alpha=0.3)
 
-    axes3[2].plot(step3["coverage@20"], step3["recall@20"],
-                  "o-", color="purple", lw=2, ms=10)
+    axes3[2].plot(step3["coverage@20"], step3["recall@20"], "o-", color="purple", lw=2, ms=10)
     for _, row in step3.iterrows():
-        axes3[2].annotate(f"a={row['alpha']}",
-                          (row["coverage@20"], row["recall@20"]),
+        axes3[2].annotate(f"a={row['alpha']}", (row["coverage@20"], row["recall@20"]),
                           textcoords="offset points", xytext=(6, 4), fontsize=9)
     axes3[2].set_xlabel("Coverage@20")
     axes3[2].set_ylabel("Recall@20")
     axes3[2].set_title("Trade-off Curve")
     axes3[2].grid(True, alpha=0.3)
-
     plt.tight_layout()
     st.pyplot(fig3)
 
-# ══════════════════════════════════════════════
-# Tab 3 — DML Analysis
-# ══════════════════════════════════════════════
 with tab3:
     st.markdown("Estimating the pure causal effect of popularity using Double Machine Learning.")
 
@@ -351,7 +307,6 @@ with tab3:
     theta_naive = -0.0649
     ci_dml      = dml.get("conf_int", [-0.0023, 0.0065])
     pval_dml    = 0.349
-    pval_naive  = 0.0000
     r2_T        = 0.067
     r2_Y        = 0.431
     T_resid     = dml["T_resid"]
@@ -359,23 +314,20 @@ with tab3:
 
     st.subheader("Causal Effect Estimation")
     c1, c2, c3 = st.columns(3)
-    c1.metric("Naive theta", f"{theta_naive:.4f}",
-              help="Simple regression without controlling X")
-    c2.metric("DML theta", f"{theta_dml:.4f}",
-              help="Deconfounded partial effect estimate after controlling X")
+    c1.metric("Naive theta", f"{theta_naive:.4f}")
+    c2.metric("DML theta", f"{theta_dml:.4f}")
     c3.metric("p-value (DML)", f"{pval_dml:.3f}",
               delta="Not significant" if pval_dml > 0.05 else "Significant")
 
     st.info(f"""
 **Interpretation:** After controlling for user/item features X,
 the effect of popularity converges from **{theta_naive:.4f} to {theta_dml:.4f}**.
-**~103%** of the negative correlation is explained by confounding.
+~103% of the negative correlation is explained by confounding.
 
-→ **"Popularity itself has no causal effect on watch_ratio"** (p={pval_dml:.3f} > 0.05)
+→ "Popularity itself has no causal effect on watch_ratio" (p={pval_dml:.3f} > 0.05)
 """)
 
     st.divider()
-
     fig4, axes4 = plt.subplots(1, 2, figsize=(12, 5))
 
     methods = ["Naive\n(no control)", "DML\n(controlled)"]
@@ -392,30 +344,25 @@ the effect of popularity converges from **{theta_naive:.4f} to {theta_dml:.4f}**
     axes4[0].grid(True, alpha=0.3, axis="y")
 
     sample_idx = np.random.choice(len(T_resid), min(5000, len(T_resid)), replace=False)
-    axes4[1].scatter(T_resid[sample_idx], Y_resid[sample_idx],
-                     alpha=0.2, s=5, color="purple")
+    axes4[1].scatter(T_resid[sample_idx], Y_resid[sample_idx], alpha=0.2, s=5, color="purple")
     x_line = np.linspace(T_resid.min(), T_resid.max(), 100)
-    axes4[1].plot(x_line, theta_dml * x_line, color="red", lw=2,
-                  label=f"theta = {theta_dml:.4f}")
+    axes4[1].plot(x_line, theta_dml * x_line, color="red", lw=2, label=f"theta = {theta_dml:.4f}")
     axes4[1].axhline(0, color="gray", lw=0.5, linestyle="--")
     axes4[1].axvline(0, color="gray", lw=0.5, linestyle="--")
     axes4[1].set_xlabel("T residual (e_T)")
     axes4[1].set_ylabel("Y residual (e_Y)")
     axes4[1].set_title("DML Stage 3: e_Y ~ e_T")
     axes4[1].legend()
-
     plt.tight_layout()
     st.pyplot(fig4)
 
     st.divider()
     st.subheader("Nuisance R-squared Diagnostics")
     r1, r2 = st.columns(2)
-    r1.metric("T ~ X  R2", f"{r2_T:.3f}",
-              help="Low = popularity is unrelated to features")
-    r2.metric("Y ~ X  R2", f"{r2_Y:.3f}",
-              help="High = watch_ratio is well explained by features")
+    r1.metric("T ~ X  R2", f"{r2_T:.3f}")
+    r2.metric("Y ~ X  R2", f"{r2_Y:.3f}")
     st.markdown(f"""
 > **R2(T~X) = {r2_T:.3f}** → Popularity is barely explained by user/item features  
 > **R2(Y~X) = {r2_Y:.3f}** → Watch ratio is well explained by features  
-> → The asymmetry of two R2 values is the core evidence of **100% confounding**
+> → The asymmetry is the core evidence of 100% confounding
 """)
