@@ -183,7 +183,14 @@ with tab1:
     with col_side:
         st.subheader("Settings")
         user_list     = list(id2code.keys())
-        selected_user = st.selectbox("Select User ID", user_list)
+        selected_user = st.number_input(
+          "Enter User ID",
+          min_value=int(min(user_list)),
+          max_value=int(max(user_list)),
+          value=int(user_list[0]),
+          step=1
+        )
+        selected_user = int(selected_user)
         lam = st.slider("lambda (IPS strength)", 0.0, 1.0, 0.0, 0.1)
         st.markdown("""
 **lambda interpretation:**
