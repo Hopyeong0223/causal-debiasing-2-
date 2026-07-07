@@ -163,46 +163,6 @@ st.set_page_config(
     layout="wide"
 )
 
-st.markdown("""
-<style>
-    .stApp { background-color: #F8F9FA; color: #1A1A2E; }
-    .block-container { background-color: #F8F9FA; padding-top: 2rem; }
-    .stTabs [data-baseweb="tab-list"] {
-        background-color: #E0E0E0 !important;
-        border-radius: 12px;
-        padding: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    .stTabs [data-baseweb="tab"] {
-        color: #1A1A2E !important;
-        font-weight: 600;
-        border-radius: 8px;
-        background-color: #E0E0E0 !important;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #4A90D9 !important;
-        color: white !important;
-    }
-    div[data-testid="metric-container"] {
-        background-color: #FFFFFF;
-        border-radius: 12px;
-        padding: 1rem 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        border-left: 4px solid #4A90D9;
-    }
-    h1 { color: #1A1A2E; font-weight: 700; }
-    h2 { color: #2C3E50; font-weight: 600; }
-    h3 { color: #34495E; font-weight: 600; }
-    .stAlert {
-        background-color: #EBF4FF;
-        border: 1px solid #4A90D9;
-        border-radius: 8px;
-        color: #1A1A2E;
-    }
-    hr { border-color: #E0E0E0; }
-</style>
-""", unsafe_allow_html=True)
-
 st.title("Causal Debiasing for Recommender Systems")
 st.markdown("Diagnosing and correcting popularity bias in recommendation logs using causal inference.")
 
